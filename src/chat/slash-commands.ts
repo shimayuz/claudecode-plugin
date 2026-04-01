@@ -1,12 +1,11 @@
 import { setIcon } from "obsidian";
-import { SKILL_CATALOG, HIDDEN_COMMANDS, CATEGORY_LABELS } from "../types/commands";
-import type { SkillDef } from "../types/commands";
+import { scanLocalCommands, type DiscoveredCommand } from "../services/command-scanner";
+import { HIDDEN_COMMANDS } from "../types/commands";
 
 interface CommandItem {
   name: string;
   description: string;
-  source: "skill" | "sdk" | "custom";
-  category?: string;
+  source: "commands" | "skills" | "sdk";
 }
 
 export class SlashCommandPopup {
@@ -16,13 +15,16 @@ export class SlashCommandPopup {
   private items: CommandItem[] = [];
   private filteredItems: CommandItem[] = [];
   private selectedIdx = 0;
-  private enabledSkills: string[] = [];
   private sdkCommands: Array<{ name: string; description: string }> = [];
+  private localCommands: DiscoveredCommand[] = [];
+  private lastScanTime = 0;
 
   constructor(container: HTMLElement, inputEl: HTMLTextAreaElement) {
     this.container = container;
     this.inputEl = inputEl;
     this.setupInputListener();
+    // Initial scan
+    this.scanCommands();
   }
 
   private setupInputListener(): void {
@@ -48,8 +50,13 @@ export class SlashCommandPopup {
     }
   }
 
-  updateSkills(enabledSkills: string[]): void {
-    this.enabledSkills = enabledSkills;
+  /** Rescan ~/.claude/commands/ and ~/.claude/skills/ */
+  scanCommands(): void {
+    const now = Date.now();
+    // Throttle: scan at most every 10 seconds
+    if (now - this.lastScanTime < 10_000 && this.localCommands.length > 0) return;
+    this.lastScanTime = now;
+    this.localCommands = scanLocalCommands();
     this.rebuildItems();
   }
 
@@ -60,47 +67,49 @@ export class SlashCommandPopup {
 
   private rebuildItems(): void {
     this.items = [];
+    const seen = new Set<string>();
 
-    // Add enabled skills
-    for (const skill of SKILL_CATALOG) {
-      if (this.enabledSkills.includes(skill.id)) {
-        this.items.push({
-          name: skill.name.replace(/^\//, ""),
-          description: skill.description,
-          source: "skill",
-          category: skill.category,
-        });
-      }
+    // 1. Local commands (~/.claude/commands/) — highest priority
+    for (const cmd of this.localCommands.filter(c => c.source === "commands")) {
+      if (seen.has(cmd.name) || HIDDEN_COMMANDS.has(cmd.name)) continue;
+      seen.add(cmd.name);
+      this.items.push({ name: cmd.name, description: cmd.description, source: "commands" });
     }
 
-    // Add SDK commands (deduplicate)
-    const skillNames = new Set(this.items.map((i) => i.name));
+    // 2. Local skills (~/.claude/skills/)
+    for (const cmd of this.localCommands.filter(c => c.source === "skills")) {
+      if (seen.has(cmd.name) || HIDDEN_COMMANDS.has(cmd.name)) continue;
+      seen.add(cmd.name);
+      this.items.push({ name: cmd.name, description: cmd.description, source: "skills" });
+    }
+
+    // 3. SDK built-in commands
     for (const cmd of this.sdkCommands) {
-      if (HIDDEN_COMMANDS.has(cmd.name)) continue;
-      if (skillNames.has(cmd.name)) continue;
-      this.items.push({
-        name: cmd.name,
-        description: cmd.description,
-        source: "sdk",
-      });
+      if (seen.has(cmd.name) || HIDDEN_COMMANDS.has(cmd.name)) continue;
+      seen.add(cmd.name);
+      this.items.push({ name: cmd.name, description: cmd.description, source: "sdk" });
     }
 
-    // Sort: skills first, then SDK commands, alphabetical within each group
+    // Sort: commands first, then skills, then SDK
+    const order: Record<string, number> = { commands: 0, skills: 1, sdk: 2 };
     this.items.sort((a, b) => {
-      if (a.source !== b.source) return a.source === "skill" ? -1 : 1;
+      const diff = (order[a.source] ?? 3) - (order[b.source] ?? 3);
+      if (diff !== 0) return diff;
       return a.name.localeCompare(b.name);
     });
   }
 
   update(): void {
+    // Rescan on popup open (throttled)
+    this.scanCommands();
+
     const val = this.inputEl.value;
     const query = val.startsWith("/") ? val.slice(1).toLowerCase() : "";
 
     this.filteredItems = query
-      ? this.items.filter(
-          (item) =>
-            item.name.toLowerCase().includes(query) ||
-            item.description.toLowerCase().includes(query),
+      ? this.items.filter(item =>
+          item.name.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query),
         )
       : [...this.items];
 
@@ -122,7 +131,9 @@ export class SlashCommandPopup {
 
     // Title
     const title = this.popupEl.createDiv("ccd-slash-title");
-    title.textContent = "Commands & Prompt Snippets";
+    title.createSpan({ text: "Commands & Prompt Snippets", cls: "ccd-slash-title-text" });
+
+    const countEl = title.createSpan({ text: `${this.filteredItems.length}/${this.items.length}`, cls: "ccd-slash-count" });
 
     const closeBtn = title.createSpan("ccd-slash-close");
     setIcon(closeBtn, "x");
@@ -139,32 +150,35 @@ export class SlashCommandPopup {
     // Items
     const list = this.popupEl.createDiv("ccd-slash-list");
 
-    // Add Custom Command option
-    const addCustom = list.createDiv("ccd-slash-item ccd-slash-add-custom");
-    const addIcon = addCustom.createSpan("ccd-slash-item-icon");
-    setIcon(addIcon, "plus");
-    const addContent = addCustom.createDiv("ccd-slash-item-content");
-    addContent.createSpan({ text: "Add Custom Command", cls: "ccd-slash-item-name" });
-    addContent.createSpan({ text: "Create your own slash command", cls: "ccd-slash-item-desc" });
-
+    // Group by source
+    let lastSource = "";
     for (let i = 0; i < this.filteredItems.length; i++) {
       const item = this.filteredItems[i];
+
+      // Section header on source change
+      if (item.source !== lastSource) {
+        lastSource = item.source;
+        const label = item.source === "commands" ? "Custom Commands"
+          : item.source === "skills" ? "Skills"
+          : "Built-in Commands";
+        const sectionHeader = list.createDiv("ccd-slash-section");
+        sectionHeader.textContent = label;
+      }
+
       const el = list.createDiv("ccd-slash-item");
       if (i === this.selectedIdx) el.addClass("ccd-slash-selected");
 
       const icon = el.createSpan("ccd-slash-item-icon");
-      setIcon(icon, item.source === "skill" ? "sparkles" : "terminal");
+      const iconName = item.source === "commands" ? "terminal"
+        : item.source === "skills" ? "sparkles"
+        : "zap";
+      setIcon(icon, iconName);
 
       const content = el.createDiv("ccd-slash-item-content");
       content.createSpan({ text: `/${item.name}`, cls: "ccd-slash-item-name" });
       content.createSpan({ text: item.description, cls: "ccd-slash-item-desc" });
 
-      if (item.category) {
-        el.createSpan({
-          text: CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] ?? item.category,
-          cls: "ccd-slash-item-tag",
-        });
-      }
+      const tag = el.createSpan({ text: item.source, cls: "ccd-slash-item-tag" });
 
       el.addEventListener("click", () => this.selectItem(i));
       el.addEventListener("mouseenter", () => {
@@ -176,7 +190,7 @@ export class SlashCommandPopup {
 
   private highlightSelected(): void {
     if (!this.popupEl) return;
-    const items = this.popupEl.querySelectorAll(".ccd-slash-item:not(.ccd-slash-add-custom)");
+    const items = this.popupEl.querySelectorAll(".ccd-slash-item");
     items.forEach((el, i) => {
       el.toggleClass("ccd-slash-selected", i === this.selectedIdx);
     });
@@ -188,7 +202,6 @@ export class SlashCommandPopup {
     this.inputEl.value = `/${item.name} `;
     this.inputEl.focus();
     this.hide();
-    // Trigger input event for slash-command args
     this.inputEl.dispatchEvent(new Event("input"));
   }
 
@@ -197,10 +210,12 @@ export class SlashCommandPopup {
       case "ArrowDown":
         this.selectedIdx = Math.min(this.selectedIdx + 1, this.filteredItems.length - 1);
         this.highlightSelected();
+        this.scrollToSelected();
         return true;
       case "ArrowUp":
         this.selectedIdx = Math.max(this.selectedIdx - 1, 0);
         this.highlightSelected();
+        this.scrollToSelected();
         return true;
       case "Enter":
       case "Tab":
@@ -212,6 +227,12 @@ export class SlashCommandPopup {
       default:
         return false;
     }
+  }
+
+  private scrollToSelected(): void {
+    if (!this.popupEl) return;
+    const selected = this.popupEl.querySelector(".ccd-slash-selected");
+    selected?.scrollIntoView({ block: "nearest" });
   }
 
   hide(): void {
