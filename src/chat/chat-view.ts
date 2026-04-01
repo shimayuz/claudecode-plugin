@@ -393,15 +393,20 @@ export class ChatView extends ItemView {
   }
 
   private async showPermissionPrompt(info: { toolName: string; input: Record<string, unknown>; title?: string; displayName?: string; description?: string }): Promise<"allow" | "deny" | "always"> {
-    // Simple auto-allow for common tools based on permission mode
     const mode = this.settings.permissionMode;
     if (mode === "bypassPermissions") return "allow";
     if (mode === "acceptEdits") {
       const editTools = ["Read", "Write", "Edit", "Glob", "Grep"];
       if (editTools.includes(info.toolName)) return "allow";
     }
-    // For now, default allow - full permission UI will be added in Phase 4
-    return "allow";
+
+    // Show inline permission prompt and await user decision
+    const { showPermissionPrompt: showPrompt } = await import("./permission-prompt");
+    const { promise } = showPrompt(
+      this.chatStream.currentElement ?? this.containerEl.children[1] as HTMLElement,
+      info,
+    );
+    return promise;
   }
 
   private handleStderr(data: string): void {

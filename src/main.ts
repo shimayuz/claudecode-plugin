@@ -113,7 +113,12 @@ export default class ClaudeCodeDashboardPlugin extends Plugin {
     }
 
     for (const skill of SKILL_CATALOG) {
+      // Prevent path traversal: reject filenames with directory separators
+      if (skill.fileName.includes("/") || skill.fileName.includes("\\") || skill.fileName.includes("..")) {
+        continue;
+      }
       const targetPath = join(SKILLS_DIR, skill.fileName);
+      if (!targetPath.startsWith(SKILLS_DIR)) continue;
       const header = `<!-- ClaudeCodeDashboard skill: ${skill.id} -->\n`;
 
       if (this.settings.enabledSkills.includes(skill.id)) {

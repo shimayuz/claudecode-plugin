@@ -143,9 +143,9 @@ export class SlashCommandPopup {
     const addCustom = list.createDiv("ccd-slash-item ccd-slash-add-custom");
     const addIcon = addCustom.createSpan("ccd-slash-item-icon");
     setIcon(addIcon, "plus");
-    addCustom.createDiv({ cls: "ccd-slash-item-content" }).innerHTML =
-      '<span class="ccd-slash-item-name">Add Custom Command</span>' +
-      '<span class="ccd-slash-item-desc">Create your own slash command</span>';
+    const addContent = addCustom.createDiv("ccd-slash-item-content");
+    addContent.createSpan({ text: "Add Custom Command", cls: "ccd-slash-item-name" });
+    addContent.createSpan({ text: "Create your own slash command", cls: "ccd-slash-item-desc" });
 
     for (let i = 0; i < this.filteredItems.length; i++) {
       const item = this.filteredItems[i];

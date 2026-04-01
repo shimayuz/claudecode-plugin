@@ -195,7 +195,7 @@ export class ProcessManager {
 
     const options: Options = {
       abortController: this.abortController,
-      cwd: this.cwd || undefined,
+      cwd: this.cwd && existsSync(this.cwd) ? this.cwd : undefined,
       env: this.buildEnv(),
       model,
       effort: this.effort || "high",
@@ -207,7 +207,7 @@ export class ProcessManager {
       thinking: this.thinkingMode ? { type: "adaptive" } : { type: "disabled" },
       spawnClaudeCodeProcess: this.createCustomSpawn(),
       canUseTool: this.onPermissionRequest ? async (toolName, input, opts) => {
-        if (toolName.startsWith("mcp__")) return { behavior: "allow" as const, updatedInput: input };
+        // MCP tools still go through permission prompt (no silent bypass)
         const signal = opts.signal;
         try {
           const result = await new Promise<"allow" | "deny" | "always">((resolve, reject) => {
@@ -254,7 +254,7 @@ export class ProcessManager {
       void this.consumeEvents();
       return true;
     } catch (err) {
-      console.error("[claudecode-dashboard] SDK query start error:", err);
+      console.error("[claudecode-dashboard] SDK query start error:", err instanceof Error ? err.message : String(err));
       this.setState("error");
       this.onComplete?.();
       return false;

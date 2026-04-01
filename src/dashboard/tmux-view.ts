@@ -105,10 +105,11 @@ export class TmuxView extends ItemView {
     const sendBtn = inputRow.createEl("button", { text: "Send", cls: "ccd-tmux-send-btn" });
     sendBtn.addEventListener("click", () => {
       const keys = input.value.trim();
-      if (keys) {
-        void this.tmuxService.sendKeys(session.name, keys);
-        input.value = "";
-      }
+      if (!keys) return;
+      // Confirm before sending to prevent accidental terminal injection
+      if (!confirm(`Send to "${session.name}"?\n\n${keys}`)) return;
+      void this.tmuxService.sendKeys(session.name, keys);
+      input.value = "";
     });
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendBtn.click();

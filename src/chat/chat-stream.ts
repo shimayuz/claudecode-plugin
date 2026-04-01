@@ -205,6 +205,9 @@ export class ChatStream {
     header.addEventListener("click", () => body.toggleClass("ccd-collapsed", !body.hasClass("ccd-collapsed")));
   }
 
+  /** Expose the current streaming element for permission prompts */
+  get currentElement(): HTMLElement | null { return this.streamingEl; }
+
   /** Finalize streaming - mark as complete */
   finalize(): void {
     if (this.currentMsg) {
