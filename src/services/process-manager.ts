@@ -205,7 +205,7 @@ export class ProcessManager {
       includePartialMessages: true,
       enableFileCheckpointing: true,
       thinking: this.thinkingMode ? { type: "adaptive" } : { type: "disabled" },
-      spawnClaudeCodeProcess: this.createCustomSpawn(),
+      stderr: (data: string) => { this.onStderr?.(data); },
       canUseTool: this.onPermissionRequest ? async (toolName, input, opts) => {
         // MCP tools still go through permission prompt (no silent bypass)
         const signal = opts.signal;
@@ -266,14 +266,17 @@ export class ProcessManager {
     try {
       for await (const message of this.activeQuery) {
         if (this._aborted) break;
-        this.handleSDKMessage(message);
+        try {
+          this.handleSDKMessage(message);
+        } catch (renderErr) {
+          // Don't let render errors kill the event loop
+          this.onStderr?.(`[render error] ${renderErr instanceof Error ? renderErr.message : String(renderErr)}`);
+        }
       }
     } catch (err: unknown) {
       if (!this._aborted) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        if (errMsg.includes("not logged in") || errMsg.includes("authenticate")) {
-          this.onStderr?.("Not logged in. Run `claude` in terminal first to authenticate.");
-        }
+        this.onStderr?.(`[SDK error] ${errMsg}`);
         this.setState("error");
         this.onComplete?.();
       }

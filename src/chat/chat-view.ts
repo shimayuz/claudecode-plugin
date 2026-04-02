@@ -412,7 +412,7 @@ export class ChatView extends ItemView {
   }
 
   private handleStderr(data: string): void {
-    const ignore = ["CPU lacks AVX", "warn:", "deprecat", "ExperimentalWarning"];
+    const ignore = ["CPU lacks AVX", "warn:", "deprecat", "ExperimentalWarning", "node:events"];
     if (ignore.some(w => data.includes(w))) return;
 
     if (data.includes("not logged in") || data.includes("authenticate")) {
@@ -422,6 +422,9 @@ export class ChatView extends ItemView {
         this.activeTab?.pm.newSession();
         this.addNewTab();
       });
+    } else if (data.includes("[SDK error]") || data.includes("[render error]")) {
+      // Show SDK/render errors in chat for debugging
+      this.chatMessages.renderError(data);
     }
   }
 
