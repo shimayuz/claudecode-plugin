@@ -14,7 +14,6 @@ export interface PluginSettings {
   showToolCalls: boolean;
   showCostInfo: boolean;
   sessions: SavedSession[];
-  enabledSkills: string[];
   planFirstDefault: boolean;
   thinkingModeDefault: boolean;
   tmuxPollInterval: number;
@@ -31,7 +30,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   showToolCalls: true,
   showCostInfo: true,
   sessions: [],
-  enabledSkills: [],
   planFirstDefault: false,
   thinkingModeDefault: true,
   tmuxPollInterval: 5000,

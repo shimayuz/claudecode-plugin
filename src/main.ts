@@ -5,13 +5,7 @@ import { AutomationView, VIEW_TYPE_AUTOMATION } from "./dashboard/automation-vie
 import { DashboardSettingTab } from "./settings/settings-tab";
 import { SessionStore } from "./services/session-store";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./types/settings";
-import { SKILL_CATALOG } from "./types/commands";
 import type { SavedSession } from "./types/chat";
-import { existsSync, writeFileSync, unlinkSync, mkdirSync, readFileSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
-
-const SKILLS_DIR = join(homedir(), ".claude", "commands");
 
 export default class ClaudeCodeDashboardPlugin extends Plugin {
   settings: PluginSettings = DEFAULT_SETTINGS;
@@ -79,9 +73,6 @@ export default class ClaudeCodeDashboardPlugin extends Plugin {
 
     // Settings tab
     this.addSettingTab(new DashboardSettingTab(this.app, this));
-
-    // Sync skills
-    this.syncSkills();
   }
 
   onunload(): void {
@@ -100,46 +91,6 @@ export default class ClaudeCodeDashboardPlugin extends Plugin {
     await this.saveData(this.settings);
     const chatView = this.getChatView();
     chatView?.updateSettings(this.settings);
-  }
-
-  /** Sync enabled skills to ~/.claude/commands/ */
-  syncSkills(): void {
-    try {
-      if (!existsSync(SKILLS_DIR)) {
-        mkdirSync(SKILLS_DIR, { recursive: true });
-      }
-    } catch {
-      return;
-    }
-
-    for (const skill of SKILL_CATALOG) {
-      // Prevent path traversal: reject filenames with directory separators
-      if (skill.fileName.includes("/") || skill.fileName.includes("\\") || skill.fileName.includes("..")) {
-        continue;
-      }
-      const targetPath = join(SKILLS_DIR, skill.fileName);
-      if (!targetPath.startsWith(SKILLS_DIR)) continue;
-      const header = `<!-- ClaudeCodeDashboard skill: ${skill.id} -->\n`;
-
-      if (this.settings.enabledSkills.includes(skill.id)) {
-        // Install skill - for now write a placeholder
-        // In production, bundled skill content would be used
-        try {
-          const content = header + `# ${skill.name}\n\n${skill.description}\n`;
-          writeFileSync(targetPath, content, "utf-8");
-        } catch { /* ignore */ }
-      } else {
-        // Remove if we own it
-        try {
-          if (existsSync(targetPath)) {
-            const content = readFileSync(targetPath, "utf-8");
-            if (content.startsWith("<!-- ClaudeCodeDashboard skill:")) {
-              unlinkSync(targetPath);
-            }
-          }
-        } catch { /* ignore */ }
-      }
-    }
   }
 
   private async activateView(viewType: string): Promise<void> {

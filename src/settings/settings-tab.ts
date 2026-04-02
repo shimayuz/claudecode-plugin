@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import type ClaudeCodeDashboardPlugin from "../main";
-import { SKILL_CATALOG, CATEGORY_LABELS } from "../types/commands";
 import type { ModelChoice, PermissionMode } from "../types/settings";
 
 export class DashboardSettingTab extends PluginSettingTab {
@@ -149,58 +148,10 @@ export class DashboardSettingTab extends PluginSettingTab {
       );
 
     // ── Skills ──
-    new Setting(containerEl).setName("Skills").setHeading();
+    new Setting(containerEl).setName("Slash Commands").setHeading();
     containerEl.createEl("p", {
-      text: "Enable skills to add slash commands. Installed to ~/.claude/commands/.",
+      text: "Slash commands are automatically discovered from ~/.claude/commands/ and ~/.claude/skills/. Type / in the chat to see all available commands.",
       cls: "setting-item-description",
     });
-
-    new Setting(containerEl)
-      .setName("Bulk actions")
-      .addButton((b) =>
-        b.setButtonText("Enable all").onClick(() => {
-          this.plugin.settings.enabledSkills = SKILL_CATALOG.map(s => s.id);
-          void this.plugin.saveSettings();
-          this.plugin.syncSkills();
-          new Notice(`${SKILL_CATALOG.length} skills enabled`);
-          this.display();
-        })
-      )
-      .addButton((b) =>
-        b.setButtonText("Disable all").onClick(() => {
-          this.plugin.settings.enabledSkills = [];
-          void this.plugin.saveSettings();
-          this.plugin.syncSkills();
-          new Notice("All skills disabled");
-          this.display();
-        })
-      );
-
-    const categories = [...new Set(SKILL_CATALOG.map(s => s.category))];
-    for (const cat of categories) {
-      const skills = SKILL_CATALOG.filter(s => s.category === cat);
-      const label = CATEGORY_LABELS[cat] ?? cat;
-      new Setting(containerEl).setName(label).setHeading();
-
-      for (const skill of skills) {
-        const enabled = this.plugin.settings.enabledSkills.includes(skill.id);
-        new Setting(containerEl)
-          .setName(skill.name)
-          .setDesc(skill.description)
-          .addToggle((t) =>
-            t.setValue(enabled).onChange((v) => {
-              if (v) {
-                if (!this.plugin.settings.enabledSkills.includes(skill.id)) {
-                  this.plugin.settings.enabledSkills = [...this.plugin.settings.enabledSkills, skill.id];
-                }
-              } else {
-                this.plugin.settings.enabledSkills = this.plugin.settings.enabledSkills.filter(id => id !== skill.id);
-              }
-              void this.plugin.saveSettings();
-              this.plugin.syncSkills();
-            })
-          );
-      }
-    }
   }
 }
