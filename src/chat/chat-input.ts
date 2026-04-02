@@ -184,10 +184,14 @@ export class ChatInput {
     const efforts: EffortLevel[] = ["low", "medium", "high", "max"];
     const effortRow = popup.createDiv("ccd-effort-row");
     for (const effort of efforts) {
-      const pill = effortRow.createSpan({ text: EFFORT_LABELS[effort], cls: "ccd-effort-pill" });
-      pill.addEventListener("click", () => {
+      const pill = effortRow.createEl("button", { text: EFFORT_LABELS[effort], cls: "ccd-effort-pill" });
+      pill.addEventListener("click", (e) => {
+        e.stopPropagation();
         this.callbacks.onEffortChange(effort);
-        popup.remove();
+        // Visual feedback
+        effortRow.querySelectorAll(".ccd-effort-pill").forEach(p => p.removeClass("ccd-effort-active"));
+        pill.addClass("ccd-effort-active");
+        setTimeout(() => popup.remove(), 150);
       });
     }
 

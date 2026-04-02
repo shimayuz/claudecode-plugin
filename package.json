@@ -1,6 +1,6 @@
 {
   "name": "obsidian-claudecode-dashboard",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Claude Code chat UI with tmux monitoring and automation dashboard for Obsidian",
   "main": "main.js",
   "scripts": {

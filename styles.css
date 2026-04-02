@@ -507,15 +507,18 @@
 
 .ccd-effort-row { display: flex; gap: 4px; padding: 4px 12px 8px; }
 .ccd-effort-pill {
-  padding: 3px 10px;
+  padding: 6px 14px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   background: var(--ccd-bg-surface);
   color: var(--ccd-text-muted);
   border: 1px solid var(--ccd-border);
+  font-family: var(--font-interface);
+  transition: all 0.15s;
 }
 .ccd-effort-pill:hover { background: var(--ccd-bg-hover); color: var(--ccd-text); }
+.ccd-effort-pill.ccd-effort-active { background: var(--ccd-accent); color: #fff; border-color: var(--ccd-accent); }
 
 /* Slash button */
 .ccd-slash-btn {
