@@ -35,7 +35,7 @@ export class ChatHeader {
     this.titleRow = this.container.createDiv("ccd-title-row");
     const titleLeft = this.titleRow.createDiv("ccd-title-left");
     const titleIcon = titleLeft.createSpan("ccd-title-icon");
-    setIcon(titleIcon, "sparkles");
+    setIcon(titleIcon, "claude-color");
     titleLeft.createSpan({ text: "Claude Code Chat", cls: "ccd-title-text" });
 
     const titleRight = this.titleRow.createDiv("ccd-title-right");

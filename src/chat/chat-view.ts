@@ -70,7 +70,7 @@ export class ChatView extends ItemView {
 
   getViewType(): string { return VIEW_TYPE_CLAUDE; }
   getDisplayText(): string { return "Claude Code"; }
-  getIcon(): string { return "sparkles"; }
+  getIcon(): string { return "claude-mono"; }
 
   async onOpen(): Promise<void> {
     const root = this.containerEl.children[1] as HTMLElement;
@@ -298,7 +298,7 @@ export class ChatView extends ItemView {
     this.chatMessages.hideEmptyState();
     this.chatMessages.renderUserMessage(userMsg);
     this.chatStream.reset();
-    this.progress.show("sparkles", "Thinking...");
+    this.progress.show("claude-mono", "Thinking...");
     this.chatInput.setRunning(true);
 
     const cwd = this.settings.workingDirectory || this.vaultCtx.getVaultBasePath();

@@ -114,7 +114,7 @@ export class ChatMessages {
     if (this.emptyStateEl) return;
     this.emptyStateEl = this.container.createDiv("ccd-empty-state");
     const icon = this.emptyStateEl.createDiv("ccd-empty-icon");
-    setIcon(icon, "sparkles");
+    setIcon(icon, "claude-color");
     this.emptyStateEl.createEl("p", { text: "Claude Code Chat", cls: "ccd-empty-title" });
     this.emptyStateEl.createEl("p", { text: subtitle, cls: "ccd-empty-subtitle" });
   }

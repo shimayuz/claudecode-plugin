@@ -1,7 +1,7 @@
 {
   "id": "claudecode-dashboard",
   "name": "Claude Code Dashboard",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "minAppVersion": "1.4.0",
   "description": "Claude Code chat UI with tmux monitoring and automation dashboard for Obsidian.",
   "author": "heavenlykiss0820",
