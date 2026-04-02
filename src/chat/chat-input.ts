@@ -7,6 +7,7 @@ export interface ChatInputCallbacks {
   onModelChange: (model: ModelChoice) => void;
   onEffortChange: (effort: EffortLevel) => void;
   onAttachFile: () => void;
+  onAtMention: () => void;
   onSlashTrigger: () => void;
   onPasteImage: (file: File) => void;
   onDropFiles: (files: File[]) => void;
@@ -122,6 +123,7 @@ export class ChatInput {
     // @ mention button
     const atBtn = rightBtns.createSpan("ccd-icon-btn");
     atBtn.createSpan({ text: "@", cls: "ccd-at-icon" });
+    atBtn.addEventListener("click", () => this.callbacks.onAtMention());
 
     // Send button
     this.sendBtn = rightBtns.createDiv("ccd-send-btn");

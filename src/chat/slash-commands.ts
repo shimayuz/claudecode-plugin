@@ -27,6 +27,8 @@ export class SlashCommandPopup {
     this.scanCommands();
   }
 
+  private blurTimer: ReturnType<typeof setTimeout> | null = null;
+
   private setupInputListener(): void {
     this.inputEl.addEventListener("input", () => this.onInputChange());
     this.inputEl.addEventListener("keydown", (e) => {
@@ -37,7 +39,12 @@ export class SlashCommandPopup {
       }
     });
     this.inputEl.addEventListener("blur", () => {
-      setTimeout(() => this.hide(), 200);
+      // Delay hide so clicks on popup items or /button can cancel it
+      this.blurTimer = setTimeout(() => this.hide(), 300);
+    });
+    this.inputEl.addEventListener("focus", () => {
+      // Cancel pending hide when refocused (e.g. /button click)
+      if (this.blurTimer) { clearTimeout(this.blurTimer); this.blurTimer = null; }
     });
   }
 

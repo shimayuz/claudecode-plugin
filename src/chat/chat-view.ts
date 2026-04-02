@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Component, setIcon, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, Component, setIcon, Notice, FuzzySuggestModal, TFile } from "obsidian";
 import type { PluginSettings, ModelChoice, EffortLevel } from "../types/settings";
 import type { ChatMessage, SessionInfo, SavedSession, McpServer } from "../types/chat";
 import type { ClaudeEvent, AssistantMessageEvent, SystemInitEvent, ResultEvent, StreamDeltaEvent } from "../types/events";
@@ -108,7 +108,8 @@ export class ChatView extends ItemView {
       onSend: (text) => this.sendMessage(text),
       onModelChange: (m) => this.changeModel(m),
       onEffortChange: (e) => { if (this.activeTab) this.activeTab.pm.effort = e; },
-      onAttachFile: () => {},
+      onAttachFile: () => this.showFilePicker(),
+      onAtMention: () => this.showAtMention(),
       onSlashTrigger: () => this.slashPopup?.update(),
       onPasteImage: (f) => this.handlePasteImage(f),
       onDropFiles: (files) => this.handleDropFiles(files),
@@ -444,12 +445,60 @@ export class ChatView extends ItemView {
     }
   }
 
-  private handlePasteImage(_file: File): void {
-    // TODO: Phase 4 - image paste handling
+  /** Show Obsidian file picker to attach a vault file */
+  private showFilePicker(): void {
+    const files = this.app.vault.getFiles();
+    const modal = new FilePickerModal(this.app, files, (file) => {
+      const textarea = this.chatInput.getTextarea();
+      const adapter = this.app.vault.adapter as { getBasePath?: () => string };
+      const basePath = adapter.getBasePath?.() ?? "";
+      const absPath = basePath ? `${basePath}/${file.path}` : file.path;
+      // Insert file reference at cursor
+      const ref = `[File: ${file.name}](${absPath})`;
+      const pos = textarea.selectionStart;
+      const before = textarea.value.slice(0, pos);
+      const after = textarea.value.slice(pos);
+      textarea.value = before + ref + after;
+      textarea.focus();
+      this.chatInput.renderContextCard({ fileName: file.name, text: file.path });
+    });
+    modal.open();
   }
 
-  private handleDropFiles(_files: File[]): void {
-    // TODO: Phase 4 - file drop handling
+  /** Show @ mention picker for vault files */
+  private showAtMention(): void {
+    const files = this.app.vault.getMarkdownFiles();
+    const modal = new FilePickerModal(this.app, files, (file) => {
+      const textarea = this.chatInput.getTextarea();
+      // Insert @mention at cursor position
+      const mention = `@${file.basename} `;
+      const pos = textarea.selectionStart;
+      const before = textarea.value.slice(0, pos);
+      const after = textarea.value.slice(pos);
+      textarea.value = before + mention + after;
+      textarea.focus();
+    });
+    modal.open();
+  }
+
+  private handlePasteImage(file: File): void {
+    const textarea = this.chatInput.getTextarea();
+    // Write temp file and insert reference
+    const tmpPath = `/tmp/ccd-paste-${Date.now()}-${file.name || "image.png"}`;
+    file.arrayBuffer().then(buf => {
+      const { writeFileSync } = require("fs") as typeof import("fs");
+      writeFileSync(tmpPath, Buffer.from(buf));
+      const ref = `[Image: ${tmpPath}]`;
+      textarea.value += (textarea.value ? "\n" : "") + ref;
+      textarea.focus();
+      new Notice(`Image attached: ${file.name || "clipboard"}`);
+    }).catch(() => new Notice("Failed to attach image"));
+  }
+
+  private handleDropFiles(files: File[]): void {
+    for (const file of files) {
+      this.handlePasteImage(file);
+    }
   }
 
   // ── Public API ──
@@ -468,4 +517,21 @@ export class ChatView extends ItemView {
       this.restoreTabMessages(tab);
     }
   }
+}
+
+/** Fuzzy file picker modal for attach and @mention */
+class FilePickerModal extends FuzzySuggestModal<TFile> {
+  private files: TFile[];
+  private onChoose: (file: TFile) => void;
+
+  constructor(app: import("obsidian").App, files: TFile[], onChoose: (file: TFile) => void) {
+    super(app);
+    this.files = files;
+    this.onChoose = onChoose;
+    this.setPlaceholder("Search vault files...");
+  }
+
+  getItems(): TFile[] { return this.files; }
+  getItemText(item: TFile): string { return item.path; }
+  onChooseItem(item: TFile): void { this.onChoose(item); }
 }
