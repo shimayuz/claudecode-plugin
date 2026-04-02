@@ -17,7 +17,8 @@ export class ChatStream {
   private settings: PluginSettings;
 
   // Streaming state
-  private streamingEl: HTMLElement | null = null;
+  private wrapperEl: HTMLElement | null = null;  // outer .ccd-streaming div
+  private streamingEl: HTMLElement | null = null; // inner bubble for appending
   private streamingTextEl: HTMLElement | null = null;
   private streamingText = "";
   private currentMsg: ChatMessage | null = null;
@@ -213,11 +214,12 @@ export class ChatStream {
     if (this.currentMsg) {
       this.currentMsg.isStreaming = false;
     }
-    if (this.streamingEl) {
-      this.streamingEl.removeClass("ccd-streaming");
+    if (this.wrapperEl) {
+      this.wrapperEl.removeClass("ccd-streaming");
     }
     // Remove spinners from tool calls
     this.streamingEl?.querySelectorAll(".ccd-tool-spinner").forEach(el => el.remove());
+    this.wrapperEl = null;
     this.streamingEl = null;
     this.streamingTextEl = null;
     this.currentMsg = null;
@@ -225,6 +227,7 @@ export class ChatStream {
 
   /** Reset for new response */
   reset(): void {
+    this.wrapperEl = null;
     this.streamingEl = null;
     this.streamingTextEl = null;
     this.streamingText = "";
@@ -237,10 +240,9 @@ export class ChatStream {
 
   private ensureStreamingEl(): void {
     if (!this.streamingEl) {
-      this.streamingEl = this.container.createDiv("ccd-msg ccd-msg-assistant ccd-streaming");
-      const bubble = this.streamingEl.createDiv("ccd-msg-bubble ccd-msg-bubble-assistant");
+      this.wrapperEl = this.container.createDiv("ccd-msg ccd-msg-assistant ccd-streaming");
+      const bubble = this.wrapperEl.createDiv("ccd-msg-bubble ccd-msg-bubble-assistant");
       this.streamingTextEl = bubble.createDiv("ccd-stream-raw-text");
-      // Re-point streamingEl to the bubble for appending content
       this.streamingEl = bubble;
     }
   }
