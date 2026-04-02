@@ -106,6 +106,7 @@ export class ChatView extends ItemView {
     const inputArea = root.createDiv("ccd-input-area");
     this.chatInput = new ChatInput(inputArea, {
       onSend: (text) => this.sendMessage(text),
+      onStop: () => { this.activeTab?.pm.abort(); },
       onModelChange: (m) => this.changeModel(m),
       onEffortChange: (e) => { if (this.activeTab) this.activeTab.pm.effort = e; },
       onAttachFile: () => this.showFilePicker(),

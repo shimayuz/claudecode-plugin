@@ -269,6 +269,7 @@
 
 .ccd-msg-bubble-assistant {
   background: var(--ccd-bg-surface);
+  color: #F5E6D3;
   border-radius: 10px 10px 10px 2px;
   margin-right: 24px;
 }
@@ -362,7 +363,7 @@
 
 /* ── Streaming ── */
 .ccd-streaming .ccd-msg-bubble-assistant { border-left: 2px solid var(--ccd-accent); }
-.ccd-stream-raw-text { white-space: pre-wrap; font-family: var(--font-monospace); font-size: 13px; }
+.ccd-stream-raw-text { white-space: pre-wrap; font-family: var(--font-monospace); font-size: 13px; color: #F5E6D3; }
 
 /* ── Progress ── */
 .ccd-progress {
@@ -441,10 +442,10 @@
   padding: 10px 12px;
   border: 1px solid var(--ccd-border);
   border-radius: 8px;
-  background: var(--ccd-bg-surface);
-  color: var(--ccd-text);
+  background: #3D3630;
+  color: #FFFFFF;
   font-family: var(--font-interface);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   resize: none;
   outline: none;

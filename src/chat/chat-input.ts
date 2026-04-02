@@ -4,6 +4,7 @@ import { MODEL_LABELS, EFFORT_LABELS } from "../types/settings";
 
 export interface ChatInputCallbacks {
   onSend: (text: string) => void;
+  onStop: () => void;
   onModelChange: (model: ModelChoice) => void;
   onEffortChange: (effort: EffortLevel) => void;
   onAttachFile: () => void;
@@ -48,13 +49,15 @@ export class ChatInput {
     // Auto-resize textarea
     this.textareaEl.addEventListener("input", () => this.autoResize());
 
-    // Keyboard shortcuts
+    // Keyboard shortcuts (IME-aware: skip Enter during composition)
     this.textareaEl.addEventListener("keydown", (e: KeyboardEvent) => {
+      // Japanese/Chinese/Korean IME: Enter confirms input, don't send
+      if (e.isComposing || e.keyCode === 229) return;
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         this.handleSend();
       }
-      // Slash command trigger
       if (e.key === "/" && this.textareaEl.value === "") {
         this.callbacks.onSlashTrigger();
       }
@@ -137,6 +140,7 @@ export class ChatInput {
     const stopIcon = this.stopBtn.createSpan("ccd-stop-icon");
     setIcon(stopIcon, "square");
     this.stopBtn.createSpan({ text: "Stop", cls: "ccd-stop-label" });
+    this.stopBtn.addEventListener("click", () => this.callbacks.onStop());
   }
 
   private handleSend(): void {
