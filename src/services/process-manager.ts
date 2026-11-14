@@ -228,10 +228,10 @@ export class ProcessManager {
     const allowed = [
       "Read", "Write", "Edit", "Glob", "Grep", "Agent",
       "Bash(cat*)", "Bash(ls*)", "Bash(head*)", "Bash(tail*)", "Bash(wc*)",
-      "Bash(find*)", "Bash(grep*)", "Bash(echo*)", "Bash(mkdir*)", "Bash(cd*)",
+      "Bash(grep*)", "Bash(echo*)", "Bash(mkdir*)", "Bash(cd*)",
     ];
     if (this.settings.allowWebRequests) {
-      allowed.push("WebFetch", "WebSearch", "Bash(curl*)", "Bash(python3*)", "Bash(open *)");
+      allowed.push("WebFetch", "WebSearch", "Bash(curl*)", "Bash(open *)");
     }
     options.allowedTools = allowed;
     if (this._sessionId) options.resume = this._sessionId;

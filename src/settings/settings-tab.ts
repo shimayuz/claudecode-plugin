@@ -67,7 +67,7 @@ export class DashboardSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Allow web requests")
-      .setDesc("Auto-approve WebFetch, WebSearch, curl, python3")
+      .setDesc("Auto-approve WebFetch, WebSearch, curl, open")
       .addToggle((t) =>
         t.setValue(this.plugin.settings.allowWebRequests).onChange((v) => {
           this.plugin.settings.allowWebRequests = v;

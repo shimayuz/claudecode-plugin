@@ -122,7 +122,7 @@ Open **Settings > Claude Code Dashboard** to customize:
 | Working directory | Default working directory for sessions | Vault root |
 | Default model | Opus 1M / Opus / Sonnet / Haiku | Sonnet |
 | Permission mode | Default / Accept Edits / Bypass All | Accept Edits |
-| Allow web requests | Auto-approve WebFetch, WebSearch, curl, python3 | Off |
+| Allow web requests | Auto-approve WebFetch, WebSearch, curl, open | Off |
 | Show tool calls | Display Read, Edit, Bash panels in chat | On |
 | Show cost info | Display token usage and cost in context bar | On |
 | Plan First default | Enable Plan First mode for new sessions | Off |
